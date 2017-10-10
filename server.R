@@ -11,27 +11,29 @@ library(dplyr)
 
 
 # Define server logic 
-shinyServer(function(input, output) {
+shinyServer(function(input, output, session) {
     
     # Get a list of the different types of crime
-    # crimelist <- read.csv(url("https://phl.carto.com/api/v2/sql?format=csv&q=SELECT distinct text_general_code 
-    #                                                                          FROM incidents_part1_part2
-    #                                                                          order by text_general_code"), 
-    #                       stringsAsFactors = FALSE)$text_general_code
-    
+    crimelist <- read.csv(url("https://phl.carto.com/api/v2/sql?format=csv&q=SELECT distinct rtrim(text_general_code) as text_general_code
+                                                                             FROM incidents_part1_part2
+                                                                             order by text_general_code"),
+                          stringsAsFactors = FALSE)$text_general_code
+
+    updateSelectInput(session,
+                      "CrimeType",
+                      choices = crimelist,
+                      selected = "Homicide - Criminal")
+                      
     parms <- reactive({
         # Create input list for testing - commented out for production
         # input <- list(start = "2017-01-01", end = Sys.Date(), CrimeType = "Homicide - Criminal")
 
-        startDate <- input$dateRange[1]
-        endDate <- input$dateRange[2]
         CrimeType <- input$CrimeType
         query <- paste0("SELECT dispatch_date,
                                 point_x,  point_y,
                                 text_general_code
                         FROM incidents_part1_part2
-                        where text_general_code = '",CrimeType,"' and
-                        dispatch_date between '",as.character(startDate),"' and '",as.character(endDate),"'")
+                        where text_general_code = '",CrimeType,"'")
         crimedata <- read.csv(url(paste0("https://phl.carto.com/api/v2/sql?format=csv&q=",query)),
                               stringsAsFactors = FALSE)
         crimedata$dispatch_date <- as.Date(crimedata$dispatch_date)
@@ -40,34 +42,33 @@ shinyServer(function(input, output) {
         crimedata$day <- day(crimedata$dispatch_date)
         crimedata$lat <- crimedata$point_y
         crimedata$lng <- crimedata$point_x
-        crimedata$text_general_code <- gsub(" $", "", crimedata$text_general_code, perl=TRUE) # Remove trailing blanks
-        #str(crimedata)
-        homicides <- crimedata %>% filter(text_general_code == "Homicide - Criminal")
-        homicidesum <- homicides %>% filter(year < 2017) %>% count(year) %>% arrange(year)
-        
+
         list(crimedata = crimedata,
-             startDate = startDate,
-             endDate = endDate,
              crimecount = length(crimedata$dispatch_date),
              CrimeType = CrimeType,
-             LastUpdate = max(crimedata$dispatch_date))
+             FirstDispatch = min(crimedata$dispatch_date),
+             LastDispatch = max(crimedata$dispatch_date))
         
     })
     
   output$leafletMap <- renderLeaflet({
-          if(parms()$crimecount > 0)
-              parms()$crimedata %>% 
-              leaflet() %>%
-              addTiles() %>%
-              addCircleMarkers(radius = 6,
-                               color = "black",
-                               fillOpacity = 1,
-                               popup = ~as.character(dispatch_date),
-                               lng = ~lng,
-                               lat = ~lat,
-                               clusterOptions = markerClusterOptions()
-                               )
-    
+      startDate <- input$dateRange[1]
+      endDate <- input$dateRange[2]
+      
+      if(parms()$crimecount > 0)
+          parms()$crimedata %>% 
+          filter(dispatch_date >= startDate, dispatch_date <= endDate) %>%
+          leaflet() %>%
+          addTiles() %>%
+          addCircleMarkers(radius = 6,
+                           color = "black",
+                           fillOpacity = 1,
+                           popup = ~as.character(dispatch_date),
+                           lng = ~lng,
+                           lat = ~lat,
+                           clusterOptions = markerClusterOptions()
+                           )
+
   })
   output$MapTitle <- renderUI({
       headingString <- paste0("<b>Cluster Map for Crime Type '",parms()$CrimeType,"' for the period from ",
@@ -78,9 +79,20 @@ shinyServer(function(input, output) {
           heading <- HTML('<br><br><p style="text-align:center"><b>Sorry - No Data Available For Selected Type and Time Period.</b></p>')
       heading
   })
-  # output$CostPlots <- renderPlot({
-  #     #str(parms())
-  #       })
+  output$countPlot <- renderPlot({
+      crimecounts <- parms()$crimedata %>% count(year) %>% arrange(year)
+      
+      plot(crimecounts$year, crimecounts$n, type = "b",
+           main = paste0("Occurrences of '",parms()$CrimeType,"' by Year"),
+           ylim = c(0,max(crimecounts$n)*1.2),
+           xlim = c(min(crimecounts$year), max(crimecounts$year + 1)),
+           xlab = "Year",
+           ylab = "Number of Occurrences",
+           col = "navyblue",
+           bty = "n",
+           lwd = 3)
+      abline(lm(crimecounts$n ~ crimecounts$year) ,col = "maroon", lty = 3, lwd = 2)
+        })
   # 
   # output$help <- renderUI({
   #     helptext <- HTML('<h1>Inventory Allocation Optimizer</h1>

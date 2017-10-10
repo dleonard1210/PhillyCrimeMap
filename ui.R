@@ -18,7 +18,7 @@ navbarPage("Philadelphia Crime Statistics",
                
                absolutePanel(id = "controls", #class = "panel panel-default", style = "background-color: white",
                              fixed = TRUE, draggable = TRUE, top = 60, left = "auto", right = 20, bottom = "auto",
-                             width = 400, height = "auto",
+                             width = 500, height = "auto",
                              h3("Explore Philly's Crime History"),
                              selectInput("CrimeType", "Select Crime Category", c("Homicide - Criminal",
                                                                 "Aggravated Assault Firearm",
@@ -38,11 +38,10 @@ navbarPage("Philadelphia Crime Statistics",
                                                                 "Vandalism/Criminal Mischief",
                                                                 "Weapon Violations"), selected = NULL, multiple = FALSE,
                                          selectize = TRUE, width = NULL, size = NULL),
-                             dateRangeInput('dateRange',
-                                            label = 'Specify time period (yyyy-mm-dd)',
-                                            start = Sys.Date() - 365, end = Sys.Date()
-                                            )
-                             )
+                             sliderInput('dateRange',
+                                            label = 'Specify time period for the map (yyyy-mm-dd)', min=as.Date("2006-01-01"),
+                                         max = Sys.Date(), value = c(Sys.Date()-365, Sys.Date())),
+                             plotOutput("countPlot"))
                )
                )
 )
