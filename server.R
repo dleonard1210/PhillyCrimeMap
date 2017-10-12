@@ -67,8 +67,8 @@ shinyServer(function(input, output, session) {
     })
     
   output$leafletMap <- renderLeaflet({
-      startDate <- input$dateRange[1]
-      endDate <- input$dateRange[2]
+      startDate <- min(input$dateRange[1],input$dateRange[2])
+      endDate <- max(input$dateRange[1],input$dateRange[2])
       
       crimedata <- parms()$crimedata %>%
           filter(dispatch_date >= startDate, dispatch_date <= endDate)
@@ -92,8 +92,8 @@ shinyServer(function(input, output, session) {
 
   })
   output$NumberOfObservations <- renderUI({
-      startDate <- input$dateRange[1]
-      endDate <- input$dateRange[2]
+      startDate <- min(input$dateRange[1],input$dateRange[2])
+      endDate <- max(input$dateRange[1],input$dateRange[2])
       startend <- parms()$crimedata %>%
           filter(dispatch_date >= startDate, dispatch_date <= endDate) %>%
           summarize(firstdispatch = min(dispatch_date), lastdispatch = max(dispatch_date), incidents = n())
