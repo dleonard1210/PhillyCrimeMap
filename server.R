@@ -70,8 +70,13 @@ shinyServer(function(input, output, session) {
       startDate <- input$dateRange[1]
       endDate <- input$dateRange[2]
       
-      if(parms()$crimecount > 0)
-          parms()$crimedata %>% 
+      crimedata <- parms()$crimedata %>%
+          filter(dispatch_date >= startDate, dispatch_date <= endDate)
+      
+      crimecount <- length(crimedata$dispatch_date)
+          
+      if( crimecount > 0)
+          crimedata %>% 
           filter(dispatch_date >= startDate, dispatch_date <= endDate) %>%
           leaflet() %>%
           addTiles() %>%
@@ -97,7 +102,7 @@ shinyServer(function(input, output, session) {
                               formatC(startend$incidents[1], big.mark=","),
                               " incidents of '",parms()$CrimeType,"' during the period from ",
                               as.character(startend$firstdispatch[1])," to ",as.character(startend$lastdispatch[1]))
-      if(parms()$crimecount > 0) 
+      if(startend$incidents[1] > 0) 
           heading <- HTML(paste0('<p style="text-align:left">',headingString,'</p>'))
       else 
           heading <- HTML('<p style="text-align:center"><b>Sorry - No Data Available For Selected Type and Time Period.</b></p>')
