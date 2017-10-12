@@ -14,9 +14,11 @@ library(dplyr)
 shinyServer(function(input, output, session) {
     
     # Get a list of the different types of crime
-    crimelist <- read.csv(url("https://phl.carto.com/api/v2/sql?format=csv&q=SELECT distinct rtrim(text_general_code) as text_general_code
-                                                                             FROM incidents_part1_part2
-                                                                             order by text_general_code"),
+    urlstring <- paste0("http://phl.carto.com/api/v2/sql?format=csv&q=",
+                        "SELECT distinct rtrim(text_general_code) as text_general_code ",
+                        "FROM incidents_part1_part2 order by text_general_code")
+    urlstring <- URLencode(urlstring)
+    crimelist <- read.csv(url(urlstring),
                           stringsAsFactors = FALSE)$text_general_code
 
     updateSelectInput(session,
@@ -29,12 +31,12 @@ shinyServer(function(input, output, session) {
         # input <- list(start = "2017-01-01", end = Sys.Date(), CrimeType = "Homicide - Criminal")
 
         CrimeType <- input$CrimeType
-        query <- paste0("SELECT dispatch_date,
-                                point_x,  point_y,
-                                text_general_code
-                        FROM incidents_part1_part2
-                        where text_general_code = '",CrimeType,"'")
-        crimedata <- read.csv(url(paste0("https://phl.carto.com/api/v2/sql?format=csv&q=",query)),
+        urlstring <- paste0("http://phl.carto.com/api/v2/sql?format=csv&q=",
+                        "SELECT dispatch_date, point_x, point_y, text_general_code ",
+                        "FROM incidents_part1_part2",
+                        " where text_general_code like '")
+        urlstring <- paste0(URLencode(urlstring),gsub(" ","_",CrimeType),"'")
+        crimedata <- read.csv(url(urlstring),
                               stringsAsFactors = FALSE)
         crimedata$dispatch_date <- as.Date(crimedata$dispatch_date)
         crimedata$year <- year(crimedata$dispatch_date)
@@ -93,36 +95,4 @@ shinyServer(function(input, output, session) {
            lwd = 3)
       abline(lm(crimecounts$n ~ crimecounts$year) ,col = "maroon", lty = 3, lwd = 2)
         })
-  # 
-  # output$help <- renderUI({
-  #     helptext <- HTML('<h1>Inventory Allocation Optimizer</h1>
-  #                       <h3>This tool will tell you the most profitable level of inventory to allocate to a store. "Most profitable" is
-  #                           defined as the level that minimizes the sum of two costs: lost margin due to stockouts, and obsolescence
-  #                           cost at the end of the season due to unsold units.<br><br>
-  #                           Use the sliders to adjust various parameters used to determine the optimal answer:</h3>
-  #                       <ul style="font-size:20px">
-  #                          <li>Retail Margin %: What portion of the retail price of the item represents gross profit?</li>
-  #                          <li>Average Daily Demand: the average number of units sold per day at this location</li>
-  #                          <li>Variability of Demand: the degree to which demand varies from day-to-day (as a % of demand)</li>
-  #                          <li>Time Remaining in Season: the number of weeks left before this item will be taken off the shelf</li>
-  #                          <li>Shipping Frequency: the number of days between arrival of shipments to this location</li>
-  #                          <li>Shipping Time: number of days it takes for ordered goods to arrive at this location from the distribution center</li>
-  #                       </ul>
-  #                       <h3>Assumptions:</h3>
-  #                       <ul style="font-size:20px">
-  #                          <li>Average demand rate is constant over the remainder of the season</li>
-  #                          <li>At the end of the season, any remaining units are discarded, so the obsolescence cost is 100% of the unit cost</li>
-  #                       </ul>
-  #                       <h3>Notes:</h3>
-  #                       <ul style="font-size:20px">
-  #                          <li>There is an interesting interplay between margin % and variability of demand.
-  #                              If you set a very high margin %, then as you increase variability you will see 
-  #                              the recommended stocking level increase. On the other hand, if you set the margin % low,
-  #                              the recommended stocking level will go down as variability goes up. Why do you think that is?</li>
-  #                          <li>The recommended stocking level is not an "order" - what you would order is the difference
-  #                              between the recommended level and the number of units currently held at the store.</li>
-  #                       </ul>
-  #                      
-  #                     ')
-  # })
 })

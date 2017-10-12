@@ -38,7 +38,7 @@ navbarPage("Philadelphia Crime Statistics",
                                                                 "Vandalism/Criminal Mischief",
                                                                 "Weapon Violations"), selected = NULL, multiple = FALSE,
                                          selectize = TRUE, width = NULL, size = NULL),
-                             sliderInput('dateRange',
+                             sliderInput('dateRange', width = 450,
                                             label = 'Specify time period for the map (yyyy-mm-dd)', min=as.Date("2006-01-01"),
                                          max = Sys.Date(), value = c(Sys.Date()-365, Sys.Date())),
                              plotOutput("countPlot"))
