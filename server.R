@@ -23,16 +23,18 @@ shinyServer(function(input, output, session) {
 
     updateSelectInput(session,
                       "CrimeType",
-                      choices = crimelist,
+                      choices = crimelist[nchar(crimelist)>0],
                       selected = "Homicide - Criminal")
                       
     parms <- reactive({
         # Create input list for testing - commented out for production
         # input <- list(start = "2017-01-01", end = Sys.Date(), CrimeType = "Homicide - Criminal")
+        
+        displayMonths <- c("January","February","March","April","May","June","July","August","September","October","November","December")
 
         CrimeType <- input$CrimeType
         urlstring <- paste0("http://phl.carto.com/api/v2/sql?format=csv&q=",
-                        "SELECT dispatch_date, point_x, point_y, text_general_code ",
+                        "SELECT dispatch_date, dispatch_date_time, location_block, dc_dist, point_x, point_y, text_general_code ",
                         "FROM incidents_part1_part2",
                         " where text_general_code like '")
         urlstring <- paste0(URLencode(urlstring),gsub(" ","_",CrimeType),"'")
@@ -41,9 +43,20 @@ shinyServer(function(input, output, session) {
         crimedata$dispatch_date <- as.Date(crimedata$dispatch_date)
         crimedata$year <- year(crimedata$dispatch_date)
         crimedata$month <- month(crimedata$dispatch_date)
+        crimedata$dispmonth <- displayMonths[crimedata$month]
         crimedata$day <- day(crimedata$dispatch_date)
         crimedata$lat <- crimedata$point_y
         crimedata$lng <- crimedata$point_x
+        crimedata$searchterms <- gsub(" ","+",paste("Philadelphia",
+                                                    CrimeType,
+                                                    "Police District",
+                                                    crimedata$dc_dist,
+                                                    crimedata$dispmonth,
+                                                    crimedata$day,
+                                                    crimedata$year,
+                                                    crimedata$dispatch_date,
+                                                    crimedata$location_block)
+                                      )
 
         list(crimedata = crimedata,
              crimecount = length(crimedata$dispatch_date),
@@ -65,20 +78,29 @@ shinyServer(function(input, output, session) {
           addCircleMarkers(radius = 6,
                            color = "black",
                            fillOpacity = 1,
-                           popup = ~as.character(dispatch_date),
+                           popup = ~paste0('<a href = "https://www.google.com/search?q=',searchterms,'" target="_blank"> Google Search </a>'),
+                           label = ~as.character(dispatch_date_time),
                            lng = ~lng,
                            lat = ~lat,
                            clusterOptions = markerClusterOptions()
                            )
 
   })
-  output$MapTitle <- renderUI({
-      headingString <- paste0("<b>Cluster Map for Crime Type '",parms()$CrimeType,"' for the period from ",
-                              as.character(parms()$startDate)," to ",as.character(parms()$LastUpdate),"</b>")
+  output$NumberOfObservations <- renderUI({
+      startDate <- input$dateRange[1]
+      endDate <- input$dateRange[2]
+      startend <- parms()$crimedata %>%
+          filter(dispatch_date >= startDate, dispatch_date <= endDate) %>%
+          summarize(firstdispatch = min(dispatch_date), lastdispatch = max(dispatch_date), incidents = n())
+      
+      headingString <- paste0("There were ",
+                              formatC(startend$incidents[1], big.mark=","),
+                              " incidents of '",parms()$CrimeType,"' during the period from ",
+                              as.character(startend$firstdispatch[1])," to ",as.character(startend$lastdispatch[1]))
       if(parms()$crimecount > 0) 
-          heading <- HTML(paste0('<br><p style="text-align:center">',headingString,'</p>'))
+          heading <- HTML(paste0('<p style="text-align:left">',headingString,'</p>'))
       else 
-          heading <- HTML('<br><br><p style="text-align:center"><b>Sorry - No Data Available For Selected Type and Time Period.</b></p>')
+          heading <- HTML('<p style="text-align:center"><b>Sorry - No Data Available For Selected Type and Time Period.</b></p>')
       heading
   })
   output$countPlot <- renderPlot({
