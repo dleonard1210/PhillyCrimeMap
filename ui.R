@@ -19,28 +19,14 @@ navbarPage("Philadelphia Crime Statistics",
                absolutePanel(id = "controls", #class = "panel panel-default", style = "background-color: white",
                              fixed = TRUE, draggable = TRUE, top = 100, left = "auto", right = 20, bottom = "auto",
                              width = 400, height = "auto",
+                             HTML('<p style="text-align:right"><button data-toggle="collapse" data-target="#demo">-/+</button></p>'),
                              h3("Explore Philly's Crime History"),
-                             selectInput("CrimeType", "Select Crime Category", c(Choose="Homicide - Criminal",
-                                                                "Aggravated Assault Firearm",
-                                                                "Aggravated Assualt No Firearm",
-                                                                "Burlary Non-Residential",
-                                                                "Burglary Residential",
-                                                                "Disorderly Conduct",
-                                                                "DRIVING UNDER THE INFLUENCE",
-                                                                "Homicide - Criminal",
-                                                                "Motor Vehicle Theft",
-                                                                "Offenses Against Family and Children",
-                                                                "Public Drunkenness",
-                                                                "Rape",
-                                                                "Recovered Stolen Motor Vehicle",
-                                                                "Robbery Firearm",
-                                                                "Robbery No Firearm",
-                                                                "Vagrancy/Loitering",
-                                                                "Vandalism/Criminal Mischief",
-                                                                "Weapon Violations"), 
+                             selectInput("CrimeType", "Select Crime Category", c("Homicide - Criminal"), 
                                          multiple = FALSE,
                                          selectize = FALSE),
+                             tags$div(id = 'demo',  class="collapse in",
                              plotOutput("countPlot")
+                             )
                              # hr(),
                              # dateRangeInput('dateRange',
                              #                label = 'Specify time period for the map (yyyy-mm-dd)',
@@ -69,6 +55,9 @@ navbarPage("Philadelphia Crime Statistics",
                )
                
                )
-               )
+               ),
+           tabPanel("Historical Trends",
+                    plotOutput("facetWrap")
+           )
 )
 

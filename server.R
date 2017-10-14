@@ -49,8 +49,7 @@ shinyServer(function(input, output, session) {
         crimedata$lng <- crimedata$point_x
         crimedata$searchterms <- gsub(" ","+",paste("Philadelphia",
                                                     CrimeType,
-                                                    "Police District",
-                                                    crimedata$dc_dist,
+                                                    paste0("'Police%20District%20",crimedata$dc_dist,"'"),
                                                     crimedata$dispmonth,
                                                     crimedata$day,
                                                     crimedata$year,
@@ -83,7 +82,14 @@ shinyServer(function(input, output, session) {
           addCircleMarkers(radius = 6,
                            color = "black",
                            fillOpacity = 1,
-                           popup = ~paste0('<a href = "https://www.google.com/search?q=',searchterms,'" target="_blank"> Google Search </a>'),
+                           popup = ~paste0(as.character(dispatch_date_time),
+                                           '; ',
+                                           location_block,
+                                           '; Police District ',
+                                           dc_dist, '; ',
+                                           ' <a href = "https://www.google.com/search?q=',
+                                           searchterms,
+                                           '" target="_blank"> Search for More Information </a>'),
                            label = ~as.character(dispatch_date_time),
                            lng = ~lng,
                            lat = ~lat,
@@ -98,9 +104,9 @@ shinyServer(function(input, output, session) {
           filter(dispatch_date >= startDate, dispatch_date <= endDate) %>%
           summarize(firstdispatch = min(dispatch_date), lastdispatch = max(dispatch_date), incidents = n())
       
-      headingString <- paste0("There were ",
+      headingString <- paste0("There were <b>",
                               formatC(startend$incidents[1], big.mark=","),
-                              " incidents of '",parms()$CrimeType,"' during the period from ",
+                              "</b> incidents of <b>",parms()$CrimeType,"</b> in Philadelphia during the period from ",
                               as.character(startend$firstdispatch[1])," to ",as.character(startend$lastdispatch[1]))
       if(startend$incidents[1] > 0) 
           heading <- HTML(paste0('<p style="text-align:left">',headingString,'</p>'))
@@ -122,4 +128,29 @@ shinyServer(function(input, output, session) {
            lwd = 3)
       abline(lm(crimecounts$n ~ crimecounts$year) ,col = "maroon", lty = 3, lwd = 2)
         })
+  output$facetWrap <- renderPlot({
+      urlstring <- URLencode(paste0("http://phl.carto.com/api/v2/sql?format=csv&q=",
+                                    "SELECT date_part('year', Dispatch_Date_Time) as Year, rtrim(text_general_code) as CrimeType, count(*) as Incidents ",
+                                    "FROM incidents_part1_part2 ",
+                                    "GROUP BY CrimeType, Year ",
+                                    "ORDER BY CrimeType, Year")
+      )
+      crimedata <- read.csv(url(urlstring))
+      
+      crimedata$year <- as.factor(crimedata$year)
+      
+      crimedata <- crimedata[crimedata$crimetype != "",] #remove empty category
+      
+      ggplot(crimedata, aes(year, incidents)) + 
+          scale_fill_manual(values = crimedata$crimetype) +
+          geom_bar(stat="identity", fill = "navy blue") +
+          # facet_wrap(~crimetype, scales = "free", labeller = labeller(crimetype = label_wrap_gen(15)))+
+          facet_wrap(~crimetype, scales = "free_y")+
+          theme(strip.text = element_text(size=10),
+                axis.text.x = element_text(angle = 90, hjust = 1),
+                plot.title = element_text(lineheight=1, face="bold", hjust = 0.5)) +
+          ggtitle("Incidence of Crimes by Year in Philadelphia")
+
+  }, height = 600)
+  
 })
