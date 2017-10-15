@@ -111,7 +111,7 @@ shinyServer(function(input, output, session) {
       if(startend$incidents[1] > 0) 
           heading <- HTML(paste0('<p style="text-align:left">',headingString,'</p>'))
       else 
-          heading <- HTML('<p style="text-align:center"><b>Sorry - No Data Available For Selected Type and Time Period.</b></p>')
+          heading <- HTML('<p style="text-align:center"><b><font color="red">Sorry - No Data Available For Selected Type and Time Period.</font></b></p>')
       heading
   })
   output$countPlot <- renderPlot({
@@ -129,6 +129,7 @@ shinyServer(function(input, output, session) {
       abline(lm(crimecounts$n ~ crimecounts$year) ,col = "maroon", lty = 3, lwd = 2)
         })
   output$facetWrap <- renderPlot({
+ 
       urlstring <- URLencode(paste0("http://phl.carto.com/api/v2/sql?format=csv&q=",
                                     "SELECT date_part('year', Dispatch_Date_Time) as Year, rtrim(text_general_code) as CrimeType, count(*) as Incidents ",
                                     "FROM incidents_part1_part2 ",
@@ -141,14 +142,21 @@ shinyServer(function(input, output, session) {
       
       crimedata <- crimedata[crimedata$crimetype != "",] #remove empty category
       
-      ggplot(crimedata, aes(year, incidents)) + 
-          scale_fill_manual(values = crimedata$crimetype) +
-          geom_bar(stat="identity", fill = "navy blue") +
-          # facet_wrap(~crimetype, scales = "free", labeller = labeller(crimetype = label_wrap_gen(15)))+
-          facet_wrap(~crimetype, scales = "free_y")+
-          theme(strip.text = element_text(size=10),
-                axis.text.x = element_text(angle = 90, hjust = 1),
-                plot.title = element_text(lineheight=1, face="bold", hjust = 0.5)) +
+      ggplot(crimedata, aes(year, incidents), group = 1) + 
+          xlab("Year") +
+          ylab("Number of Incidents") +
+          #scale_fill_manual(values = crimedata$crimetype) +
+          geom_point(size = 2) +
+          geom_line(size = 1, color="navy blue", aes(group=1)) +
+          geom_smooth(method = "lm", linetype = "dotted", se = FALSE, color = "red", aes(group=1)) +
+          expand_limits(y = 0) +
+          #expand_limits(x = max(as.numeric(crimedata$year))+1) +
+          facet_wrap(~crimetype, scales = "free_y") +
+          theme(#plot.background = element_rect(fill = 'gray'),
+                strip.text = element_text(size=10, face="bold"),
+                axis.text.x = element_text(angle = 90, hjust = 0.5),
+                axis.title=element_text(size=14,face="bold"),
+                plot.title = element_text(size = 18, face="bold", hjust = 0.5)) +
           ggtitle("Incidence of Crimes by Year in Philadelphia")
 
   }, height = 600)
