@@ -8,6 +8,9 @@ library(ggplot2)
 library(leaflet)
 library(lubridate)
 library(dplyr)
+library(rgdal)
+library(sp)
+library(geojsonio)
 
 
 # Define server logic 
@@ -73,12 +76,17 @@ shinyServer(function(input, output, session) {
           filter(dispatch_date >= startDate, dispatch_date <= endDate)
       
       crimecount <- length(crimedata$dispatch_date)
-          
+      
+      gjfile <- "phillyhoods.geojson"
+
+      phillyhoods <- geojson_read(gjfile, what = "sp")
+      
       if( crimecount > 0)
           crimedata %>% 
           filter(dispatch_date >= startDate, dispatch_date <= endDate) %>%
           leaflet() %>%
           addTiles() %>%
+          addPolygons(fillOpacity = 0, label = ~mapname, weight = 2, data = phillyhoods) %>%
           addCircleMarkers(radius = 6,
                            color = "black",
                            fillOpacity = 1,

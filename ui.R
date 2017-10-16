@@ -30,15 +30,15 @@ navbarPage("Philadelphia Crime Statistics",
                                  style="font-size:140%"
                              ),
                              uiOutput("NumberOfObservations"),
-                             div(h5(a("Leonard Analytics",
-                                      href = "http://leonardanalytics.com")))
+                             div(style="float:right",h5(a("Leonard Analytics", href = "http://leonardanalytics.com")))
                              )
                         )
                     ),
            tabPanel("Historical Trends",
+                    div(style="float:right",h5(a("Leonard Analytics", href = "http://leonardanalytics.com"))),
                     conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                      tags$div("                       Wait for it...")),
-           plotOutput("facetWrap")
+                    plotOutput("facetWrap")
            )
 )
 
