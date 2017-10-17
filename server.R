@@ -175,11 +175,27 @@ shinyServer(function(input, output, session) {
 
   }, height = 600)
 
-#   observe({
-#       print(dates()$startDate)
-#       print(dates()$endDate)
-#       startDate <- dates()$startDate
-#       endDate <- dates()$endDate
-#       updateDateRangeInput(session, "daterange", start = startDate, end = endDate)
-# })
-})
+  output$about <- renderUI({
+      abouttext <- HTML('
+<h2>Philadelphia Crime Statistics</h2>
+<h5>This tool utilizes publicly available information provided by <a href="https://OpenDataPhilly.org">OpenDataPhilly</a> to show historical crime incidents in Philadelphia County. <br><br>
+Two sources of data are used:</h5>
+<ul style="font-size:14px">
+<li>The <a href="https://www.opendataphilly.org/dataset/crime-incidents">Philadelphia Crime Incidents API</a>, provided by the City of Philadelphia.<br>
+The City maintains a database of every crime incident resulting in the dispatch of police officers since the beginning of 2006.<br>They publish it to <a href="https://carto.com">Carto.com</a>, a leading provider of location intelligence data, and update it daily.<br>
+There are 33 different crime categories, ranging from Criminal Homicide to Vagrancy/Loitering.</li>
+<li>A <a href="https://github.com/azavea/geo-data/blob/master/Neighborhoods_Philadelphia/Neighborhoods_Philadelphia.geojson">map of Philadelphia Neighborhoods</a>, in GeoJSON format, provided by <a href="https://www.azavea.com/">Azavea, Inc.</a></li>
+</ul>
+<h5>The Crime Cluster Map uses the <a href="http://leafletjs.com/">Leaflet Javascript library</a>, which overlays incidents on a map and controls clustering of the data points<br>
+based on the currently visible map layer. Clicking on a circle with a number will expand that cluster; clicking on a black circle representing <br>
+a single incident will popup an information box, which includes a link to search Google for more information about the incident. Note that for<br>
+many incidents there will not be any relevant search results, especially for less serious offenses.
+<br><br>
+The Historical Trends tab shows the number of incidents by year for each of the 33 different crime categories, and includes a trend line.
+<br><br>
+<i>About Azavea, Inc.</i><br>
+Azavea is a civic technology firm based in Philadelphia, and is the original developer of OpenDataPhilly.<br>Azavea applies geospatial technology for civic and social impact.
+</h5>
+')
+  })
+  })

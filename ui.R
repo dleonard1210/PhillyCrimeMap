@@ -46,6 +46,7 @@ navbarPage("Philadelphia Crime Statistics",
                     conditionalPanel(condition="$('html').hasClass('shiny-busy')",
                                      tags$div("                       Wait for it...")),
                     plotOutput("facetWrap")
-           )
+           ),
+           tabPanel("About", htmlOutput("about"))
 )
 
