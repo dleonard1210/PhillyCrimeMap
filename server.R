@@ -4,6 +4,7 @@
 #
 
 library(shiny)
+library(shinyjs)
 library(ggplot2)
 library(leaflet)
 library(lubridate)
@@ -68,9 +69,27 @@ shinyServer(function(input, output, session) {
         
     })
     
+    dates <- reactive({
+        startDate <- switch(input$radio,
+                            month = Sys.Date()-31,
+                            sixmonths = Sys.Date()-182,
+                            year = Sys.Date()-365,
+                            custom = min(input$dateRange[1],input$dateRange[2])
+        )
+        endDate <- switch(input$radio,
+                          custom = max(input$dateRange[1],input$dateRange[2]),
+                          month = Sys.Date(),
+                          sixmonths = Sys.Date(),
+                          year = Sys.Date()
+        )
+        if (input$radio == "custom") enable("dateRange") else disable("dateRange")
+            
+        list(startDate = startDate, endDate = endDate)
+    })
+    
   output$leafletMap <- renderLeaflet({
-      startDate <- min(input$dateRange[1],input$dateRange[2])
-      endDate <- max(input$dateRange[1],input$dateRange[2])
+      startDate <- dates()$startDate
+      endDate <- dates()$endDate
       
       crimedata <- parms()$crimedata %>%
           filter(dispatch_date >= startDate, dispatch_date <= endDate)
@@ -106,8 +125,8 @@ shinyServer(function(input, output, session) {
 
   })
   output$NumberOfObservations <- renderUI({
-      startDate <- min(input$dateRange[1],input$dateRange[2])
-      endDate <- max(input$dateRange[1],input$dateRange[2])
+      startDate <- dates()$startDate
+      endDate <- dates()$endDate
       startend <- parms()$crimedata %>%
           filter(dispatch_date >= startDate, dispatch_date <= endDate) %>%
           summarize(firstdispatch = min(dispatch_date), lastdispatch = max(dispatch_date), incidents = n())
@@ -122,20 +141,7 @@ shinyServer(function(input, output, session) {
           heading <- HTML('<p style="text-align:center"><b><font color="red">Sorry - No Data Available For Selected Type and Time Period.</font></b></p>')
       heading
   })
-  output$countPlot <- renderPlot({
-      crimecounts <- parms()$crimedata %>% count(year) %>% arrange(year)
-      
-      plot(crimecounts$year, crimecounts$n, type = "b",
-           main = paste0("Occurrences of '",parms()$CrimeType,"' by Year"),
-           ylim = c(0,max(crimecounts$n)*1.2),
-           xlim = c(min(crimecounts$year), max(crimecounts$year + 1)),
-           xlab = "Year",
-           ylab = "Number of Occurrences",
-           col = "navyblue",
-           bty = "n",
-           lwd = 3)
-      abline(lm(crimecounts$n ~ crimecounts$year) ,col = "maroon", lty = 3, lwd = 2)
-        })
+
   output$facetWrap <- renderPlot({
  
       urlstring <- URLencode(paste0("http://phl.carto.com/api/v2/sql?format=csv&q=",
@@ -168,5 +174,12 @@ shinyServer(function(input, output, session) {
           ggtitle("Incidence of Crimes by Year in Philadelphia")
 
   }, height = 600)
-  
+
+#   observe({
+#       print(dates()$startDate)
+#       print(dates()$endDate)
+#       startDate <- dates()$startDate
+#       endDate <- dates()$endDate
+#       updateDateRangeInput(session, "daterange", start = startDate, end = endDate)
+# })
 })

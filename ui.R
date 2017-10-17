@@ -4,6 +4,7 @@
 #
 
 library(shiny)
+library(shinyjs)
 library(leaflet)
 
 navbarPage("Philadelphia Crime Statistics",
@@ -15,23 +16,29 @@ navbarPage("Philadelphia Crime Statistics",
                             ),
                         leafletOutput("leafletMap", width = "100%", height = 700),
                         
-                        absolutePanel(id = "controls", #class = "panel panel-default", style = "background-color: white",
-                             fixed = TRUE, draggable = TRUE, top = 75, left = "auto", right = 20, bottom = "auto",
-                             width = 350, height = "auto",
-                             div(br(),
-                                 selectInput("CrimeType", "Crime Category", c("Homicide - Criminal"), 
+                        absolutePanel(id = "controls",
+                                      useShinyjs(),
+                                      fixed = TRUE, draggable = TRUE, 
+                                      top = 200, left = 20, right = "auto", bottom = "auto",
+                                      width = 350, height = "auto",
+                                      h4("Crime Category"),
+                                          selectInput("CrimeType", NA, c("Homicide - Criminal"), 
                                              multiple = FALSE,
                                              selectize = FALSE),
+                                    h4("Show Incidents From Most Recent:"),
+                                 radioButtons("radio", NA, c("Month" = "month",
+                                                                         "6 Months" = "sixmonths",
+                                                                         "Year" = "year", 
+                                                                         "Custom" = "custom"),
+                                              inline = TRUE),
                                  dateRangeInput('dateRange',
-                                                label = 'Date Range',
-                                                start = Sys.Date() - 365, end = Sys.Date(),
+                                                label = NA,
+                                                start = "2006-01-01", end = Sys.Date(),
                                                 startview = "year",
-                                                min = as.Date("2006-01-01"), max = Sys.Date()), 
-                                 style="font-size:140%"
-                             ),
-                             uiOutput("NumberOfObservations"),
-                             div(style="float:right",h5(a("Leonard Analytics", href = "http://leonardanalytics.com")))
-                             )
+                                                min = as.Date("2006-01-01"), max = Sys.Date()),
+                                 uiOutput("NumberOfObservations"),
+                                 div(style="float:right",h5(a("Leonard Analytics", href = "http://leonardanalytics.com")))
+                                 )
                         )
                     ),
            tabPanel("Historical Trends",
