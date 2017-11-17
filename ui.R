@@ -47,6 +47,10 @@ navbarPage("Philadelphia Crime Statistics",
                                      tags$div("                       Wait for it...")),
                     plotOutput("facetWrap")
            ),
-           tabPanel("About", htmlOutput("about"))
+           tabPanel("About", 
+                    div(style="max-width:800px", 
+                    htmlOutput("about"),div(style="float:right",
+                                            h5(a("Leonard Analytics", href = "http://leonardanalytics.com"))))
+)
 )
 

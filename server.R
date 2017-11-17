@@ -54,6 +54,7 @@ shinyServer(function(input, output, session) {
         crimedata$searchterms <- gsub(" ","+",paste("Philadelphia",
                                                     CrimeType,
                                                     paste0("'Police%20District%20",crimedata$dc_dist,"'"),
+                                                    "CBS ABC FOX NBC",
                                                     crimedata$dispmonth,
                                                     crimedata$day,
                                                     crimedata$year,
@@ -156,15 +157,18 @@ shinyServer(function(input, output, session) {
       
       crimedata <- crimedata[crimedata$crimetype != "",] #remove empty category
       
+      crimedata <- crimedata %>%
+          mutate(category = ifelse(grepl("Assault|Homicide|Robbery|Rape",crimetype), "Violent",
+                                   ifelse(grepl("Theft|Burglary|Vandalism",crimetype), "Property",
+                                          ifelse(grepl("Liquor|Drunkenness|DRIVING",crimetype),"Alcohol-Related","Other"))))
+      
       ggplot(crimedata, aes(year, incidents), group = 1) + 
           xlab("Year") +
           ylab("Number of Incidents") +
-          #scale_fill_manual(values = crimedata$crimetype) +
           geom_point(size = 2) +
           geom_line(size = 1, color="navy blue", aes(group=1)) +
           geom_smooth(method = "lm", linetype = "dotted", se = FALSE, color = "red", aes(group=1)) +
           expand_limits(y = 0) +
-          #expand_limits(x = max(as.numeric(crimedata$year))+1) +
           facet_wrap(~crimetype, scales = "free_y") +
           theme(#plot.background = element_rect(fill = 'gray'),
                 strip.text = element_text(size=10, face="bold"),
@@ -173,29 +177,59 @@ shinyServer(function(input, output, session) {
                 plot.title = element_text(size = 18, face="bold", hjust = 0.5)) +
           ggtitle("Incidence of Crimes by Year in Philadelphia")
 
+      crimecategories <- crimedata %>%
+          group_by(year, category) %>%
+          summarize(incidents = sum(incidents))
+      
+      ggplot(crimecategories, aes(year, incidents), group = 1) + 
+          xlab("Year") +
+          ylab("Number of Incidents") +
+          geom_point(size = 2) +
+          geom_line(size = 1, color="navy blue", aes(group=1)) +
+          geom_smooth(method = "lm", linetype = "dotted", se = FALSE, color = "red", aes(group=1)) +
+          expand_limits(y = 0) +
+          facet_wrap(~category, scales = "free_y") +
+          theme(strip.text = element_text(size=10, face="bold"),
+              axis.text.x = element_text(angle = 90, hjust = 0.5),
+              axis.title=element_text(size=14,face="bold"),
+              plot.title = element_text(size = 18, face="bold", hjust = 0.5)) +
+          ggtitle("Incidence of Crimes by Year in Philadelphia")
+      
+      
   }, height = 600)
 
   output$about <- renderUI({
       abouttext <- HTML('
+<head>
+<style>
+body {
+background-color: #f2f2f2;
+}
+</style>
+</head>
+<body>
 <h2>Philadelphia Crime Statistics</h2>
 <h5>This tool utilizes publicly available information provided by <a href="https://OpenDataPhilly.org">OpenDataPhilly</a> to show historical crime incidents in Philadelphia County. <br><br>
 Two sources of data are used:</h5>
 <ul style="font-size:14px">
-<li>The <a href="https://www.opendataphilly.org/dataset/crime-incidents">Philadelphia Crime Incidents API</a>, provided by the City of Philadelphia.<br>
-The City maintains a database of every crime incident resulting in the dispatch of police officers since the beginning of 2006.<br>They publish it to <a href="https://carto.com">Carto.com</a>, a leading provider of location intelligence data, and update it daily.<br>
+<li>The <a href="https://www.opendataphilly.org/dataset/crime-incidents">Philadelphia Crime Incidents API</a>, provided by the City of Philadelphia. 
+The City maintains a database of every crime incident resulting in the dispatch of police officers since the beginning of 2006. They publish it to <a href="https://carto.com">Carto.com</a>, a leading provider of location intelligence data, and update it daily. 
 There are 33 different crime categories, ranging from Criminal Homicide to Vagrancy/Loitering.</li>
-<li>A <a href="https://github.com/azavea/geo-data/blob/master/Neighborhoods_Philadelphia/Neighborhoods_Philadelphia.geojson">map of Philadelphia Neighborhoods</a>, in GeoJSON format, provided by <a href="https://www.azavea.com/">Azavea, Inc.</a></li>
+<li>A <a href="https://github.com/azavea/geo-data/blob/master/Neighborhoods_Philadelphia/Neighborhoods_Philadelphia.geojson">map of Philadelphia Neighborhoods</a>, in GeoJSON format, provided by <a href="https://www.azavea.com/">Azavea, Inc.</a>
+It should be noted that there is no "official" list of neighborhood designations, and neighborhood names tend to change over time, but this list is
+relatively current.</li>
 </ul>
-<h5>The Crime Cluster Map uses the <a href="http://leafletjs.com/">Leaflet Javascript library</a>, which overlays incidents on a map and controls clustering of the data points<br>
-based on the currently visible map layer. Clicking on a circle with a number will expand that cluster; clicking on a black circle representing <br>
-a single incident will popup an information box, which includes a link to search Google for more information about the incident. Note that for<br>
+<h5>The Crime Cluster Map uses the <a href="http://leafletjs.com/">Leaflet Javascript library</a>, which overlays incidents on a map and controls clustering of the data points 
+based on the currently visible map layer. Clicking on a circle with a number will expand that cluster; clicking on a black circle representing 
+a single incident will popup an information box, which includes a link that does a Google search for more information about the incident. Note that for 
 many incidents there will not be any relevant search results, especially for less serious offenses.
 <br><br>
 The Historical Trends tab shows the number of incidents by year for each of the 33 different crime categories, and includes a trend line.
 <br><br>
 <i>About Azavea, Inc.</i><br>
-Azavea is a civic technology firm based in Philadelphia, and is the original developer of OpenDataPhilly.<br>Azavea applies geospatial technology for civic and social impact.
+<a href="https://www.azavea.com/">Azavea</a> is a civic technology firm based in Philadelphia, and is the original developer of OpenDataPhilly. Azavea applies geospatial technology for civic and social impact.
 </h5>
+</body>
 ')
   })
   })

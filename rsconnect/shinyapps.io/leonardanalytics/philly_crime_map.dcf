@@ -3,9 +3,9 @@ title: Philly Crime Map
 account: leonardanalytics
 server: shinyapps.io
 appId: 223875
-bundleId: 1031668
+bundleId: 1031714
 url: https://leonardanalytics.shinyapps.io/philly_crime_map/
-when: 1508279193.33967
+when: 1508280756.88995
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: testquery.R|uiOld.R
